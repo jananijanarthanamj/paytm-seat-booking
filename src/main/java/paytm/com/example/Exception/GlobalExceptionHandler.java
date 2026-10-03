@@ -20,4 +20,12 @@ public class GlobalExceptionHandler {
             UserReservationLimitExceededException ex) {
         return ex.getMessage();
     }
+    
+    @ExceptionHandler(IdempotencyConflictException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public String handleIdempotencyConflict(
+            IdempotencyConflictException ex) {
+
+        return ex.getMessage();
+    }
 }

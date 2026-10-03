@@ -17,56 +17,64 @@ import jakarta.persistence.Table;
 public class Reservation {
 
 	@Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @Column(name = "user_id", nullable = false)
-    private String userId;
+	@Column(name = "user_id", nullable = false)
+	private String userId;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "show_id", nullable = false)
-    private Show show;
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "show_id", nullable = false)
+	private Show show;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "seat_id", nullable = false)
-    private Seat seat;
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "seat_id", nullable = false)
+	private Seat seat;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private ReservationStatus status;
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false)
+	private ReservationStatus status;
 
-    public Reservation() {
-    }
+	@Column(name = "idempotency_key", nullable = false)
+	private String idempotencyKey;
 
-    public Reservation(String userId, Show show, Seat seat, ReservationStatus status) {
-        this.userId = userId;
-        this.show = show;
-        this.seat = seat;
-        this.status = status;
-    }
+	public Reservation() {
+	}
 
-    public Long getId() {
-        return id;
-    }
+	public Reservation(String userId, Show show, Seat seat, ReservationStatus status, String idempotencyKey) {
+		this.userId = userId;
+		this.show = show;
+		this.seat = seat;
+		this.status = status;
+		this.idempotencyKey = idempotencyKey;
+	}
 
-    public String getUserId() {
-        return userId;
-    }
+	public Long getId() {
+		return id;
+	}
 
-    public Show getShow() {
-        return show;
-    }
+	public String getUserId() {
+		return userId;
+	}
 
-    public Seat getSeat() {
-        return seat;
-    }
+	public Show getShow() {
+		return show;
+	}
 
-    public ReservationStatus getStatus() {
-        return status;
-    }
+	public Seat getSeat() {
+		return seat;
+	}
 
-    public void setStatus(ReservationStatus status) {
-        this.status = status;
-    }
-    
+	public ReservationStatus getStatus() {
+		return status;
+	}
+
+	public void setStatus(ReservationStatus status) {
+		this.status = status;
+	}
+	
+	public String getIdempotencyKey() {
+	    return idempotencyKey;
+	}
+
 }
