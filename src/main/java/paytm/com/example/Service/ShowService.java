@@ -87,7 +87,7 @@ public class ShowService {
 	}
 
 	@Transactional
-	public ReservationResponse reserveSeats(Long showId, ReserveRequest request) {
+	public ReservationResponse reserveSeats(Long showId, ReserveRequest request, String userId) {
 
 		if (request.getIdempotencyKey() == null || request.getIdempotencyKey().isBlank()) {
 
@@ -103,7 +103,7 @@ public class ShowService {
 
 			String requestedSeats = String.join(",", request.getSeats());
 
-			if (!record.getUserId().equals(request.getUserId()) || !record.getShowId().equals(showId)
+			if (!record.getUserId().equals(userId) || !record.getShowId().equals(showId)
 					|| !record.getSeatNumbers().equals(requestedSeats)) {
 
 				throw new IdempotencyConflictException("Idempotency key already used with different request");
@@ -118,8 +118,7 @@ public class ShowService {
 
 		Show show = showRepository.findById(showId).orElseThrow(() -> new RuntimeException("Show not found"));
 
-		long currentReservations = reservationRepository.countByUserIdAndStatus(request.getUserId(),
-				ReservationStatus.CONFIRMED);
+		long currentReservations = reservationRepository.countByUserIdAndStatus(userId, ReservationStatus.CONFIRMED);
 
 		int requestedSeats = request.getSeats().size();
 
@@ -144,7 +143,7 @@ public class ShowService {
 
 			seat.setStatus(SeatStatus.CONFIRMED);
 
-			Reservation reservation = new Reservation(request.getUserId(), show, seat, ReservationStatus.CONFIRMED,
+			Reservation reservation = new Reservation(userId, show, seat, ReservationStatus.CONFIRMED,
 					request.getIdempotencyKey());
 
 			Reservation savedReservation = reservationRepository.save(reservation);
@@ -153,34 +152,33 @@ public class ShowService {
 				firstReservationId = savedReservation.getId();
 			}
 
-			responses.add(new ReservationResponse(savedReservation.getId(), show.getId(), request.getUserId(),
-					seat.getSeatNumber(), savedReservation.getStatus().name()));
+			responses.add(new ReservationResponse(savedReservation.getId(), show.getId(), reservation.getUserId(), seat.getSeatNumber(),
+					savedReservation.getStatus().name()));
 		}
 
 		// Save ONE idempotency record for the whole request
-		IdempotencyRecord record = new IdempotencyRecord(request.getIdempotencyKey(), request.getUserId(), showId,
+		IdempotencyRecord record = new IdempotencyRecord(request.getIdempotencyKey(), userId, showId,
 				String.join(",", request.getSeats()), firstReservationId);
 
 		idempotencyRecordRepository.save(record);
 
 		return responses.get(0);
 	}
-	
+
 	@Transactional
 	public void cancelReservation(Long reservationId) {
 
-	    Reservation reservation = reservationRepository.findById(reservationId)
-	            .orElseThrow(() ->
-	                    new RuntimeException("Reservation not found"));
+		Reservation reservation = reservationRepository.findById(reservationId)
+				.orElseThrow(() -> new RuntimeException("Reservation not found"));
 
-	    if (reservation.getStatus() == ReservationStatus.CANCELLED) {
-	        throw new RuntimeException("Reservation already cancelled");
-	    }
+		if (reservation.getStatus() == ReservationStatus.CANCELLED) {
+			throw new RuntimeException("Reservation already cancelled");
+		}
 
-	    Seat seat = reservation.getSeat();
+		Seat seat = reservation.getSeat();
 
-	    reservation.setStatus(ReservationStatus.CANCELLED);
-	    seat.setStatus(SeatStatus.AVAILABLE);
+		reservation.setStatus(ReservationStatus.CANCELLED);
+		seat.setStatus(SeatStatus.AVAILABLE);
 	}
 
 }

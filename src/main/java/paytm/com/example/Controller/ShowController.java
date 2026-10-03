@@ -9,7 +9,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.servlet.http.HttpServletRequest;
 import paytm.com.example.Entity.Show;
+import paytm.com.example.Security.AuthenticatedUserFilter;
 import paytm.com.example.Service.ShowService;
 import paytm.com.example.dto.CreateShowRequest;
 import paytm.com.example.dto.ReservationResponse;
@@ -39,8 +41,16 @@ public class ShowController {
 
 	@PostMapping("/{id}/reserve")
 	@ResponseStatus(HttpStatus.CREATED)
-	public ReservationResponse reserveSeats(@PathVariable Long id, @RequestBody ReserveRequest request) {
-		return showService.reserveSeats(id, request);
+	public ReservationResponse reserveSeats(
+	        @PathVariable Long id,
+	        @RequestBody ReserveRequest request,
+	        HttpServletRequest httpRequest) {
+
+	    String userId = (String) httpRequest.getAttribute(
+	            AuthenticatedUserFilter.USER_ID_ATTRIBUTE
+	    );
+
+	    return showService.reserveSeats(id, request, userId);
 	}
 
 	@PostMapping("/reservations/{reservationId}/cancel")
