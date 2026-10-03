@@ -12,6 +12,7 @@ import paytm.com.example.Entity.ReservationStatus;
 import paytm.com.example.Entity.Seat;
 import paytm.com.example.Entity.SeatStatus;
 import paytm.com.example.Entity.Show;
+import paytm.com.example.Exception.SeatAlreadyReservedException;
 import paytm.com.example.Repository.ReservationRepository;
 import paytm.com.example.Repository.SeatRepository;
 import paytm.com.example.Repository.ShowRepository;
@@ -117,7 +118,7 @@ public class ShowService {
                     .orElseThrow(() -> new RuntimeException("Seat not found"));
 
             if (seat.getStatus() == SeatStatus.CONFIRMED) {
-                throw new RuntimeException("Seat already confirmed");
+                throw new SeatAlreadyReservedException("Seat already confirmed");
             }
 
             seat.setStatus(SeatStatus.CONFIRMED);
