@@ -12,27 +12,34 @@ import org.springframework.web.bind.annotation.RestController;
 import paytm.com.example.Entity.Show;
 import paytm.com.example.Service.ShowService;
 import paytm.com.example.dto.CreateShowRequest;
+import paytm.com.example.dto.ReservationResponse;
+import paytm.com.example.dto.ReserveRequest;
 import paytm.com.example.dto.ShowResponse;
 
 @RestController
 @RequestMapping("/shows")
 public class ShowController {
 
-	 private final ShowService showService;
+	private final ShowService showService;
 
-	    public ShowController(ShowService showService) {
-	        this.showService = showService;
-	    }
+	public ShowController(ShowService showService) {
+		this.showService = showService;
+	}
 
-	    @PostMapping
-	    @ResponseStatus(HttpStatus.CREATED)
-	    public Show createShow(@RequestBody CreateShowRequest request) {
-	        return showService.createShow(request);
-	    }
-	    
-	    @GetMapping("/{id}")
-	    public ShowResponse getShow(@PathVariable Long id) {
-	        return showService.getShow(id);
-	    }
-	    
+	@PostMapping
+	@ResponseStatus(HttpStatus.CREATED)
+	public Show createShow(@RequestBody CreateShowRequest request) {
+		return showService.createShow(request);
+	}
+
+	@GetMapping("/{id}")
+	public ShowResponse getShow(@PathVariable Long id) {
+		return showService.getShow(id);
+	}
+
+	@PostMapping("/{id}/reserve")
+	@ResponseStatus(HttpStatus.CREATED)
+	public ReservationResponse reserveSeats(@PathVariable Long id, @RequestBody ReserveRequest request) {
+		return showService.reserveSeats(id, request);
+	}
 }

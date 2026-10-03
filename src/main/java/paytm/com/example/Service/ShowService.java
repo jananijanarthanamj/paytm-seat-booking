@@ -1,17 +1,23 @@
 package paytm.com.example.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
+import paytm.com.example.Entity.Reservation;
+import paytm.com.example.Entity.ReservationStatus;
 import paytm.com.example.Entity.Seat;
 import paytm.com.example.Entity.SeatStatus;
 import paytm.com.example.Entity.Show;
+import paytm.com.example.Repository.ReservationRepository;
 import paytm.com.example.Repository.SeatRepository;
 import paytm.com.example.Repository.ShowRepository;
 import paytm.com.example.dto.CreateShowRequest;
+import paytm.com.example.dto.ReservationResponse;
+import paytm.com.example.dto.ReserveRequest;
 import paytm.com.example.dto.SeatResponse;
 import paytm.com.example.dto.ShowResponse;
 
@@ -21,13 +27,16 @@ public class ShowService {
 
     private final ShowRepository showRepository;
     private final SeatRepository seatRepository;
+    private final ReservationRepository reservationRepository;
 
     public ShowService(
             ShowRepository showRepository,
-            SeatRepository seatRepository) {
+            SeatRepository seatRepository,
+            ReservationRepository reservationRepository) {
 
         this.showRepository = showRepository;
         this.seatRepository = seatRepository;
+        this.reservationRepository = reservationRepository;
     }
 
     @Transactional
@@ -89,6 +98,52 @@ public class ShowService {
                 confirmedSeats,
                 seatResponses
         );
+    }
+    
+    @Transactional
+    public ReservationResponse reserveSeats(Long showId, ReserveRequest request) {
+
+        Show show = showRepository.findById(showId)
+                .orElseThrow(() -> new RuntimeException("Show not found"));
+
+        List<ReservationResponse> responses = new ArrayList<>();
+
+        for (String seatNumber : request.getSeats()) {
+
+            Seat seat = seatRepository.findByShowId(showId)
+                    .stream()
+                    .filter(s -> s.getSeatNumber().equals(seatNumber))
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("Seat not found"));
+
+            if (seat.getStatus() == SeatStatus.CONFIRMED) {
+                throw new RuntimeException("Seat already confirmed");
+            }
+
+            seat.setStatus(SeatStatus.CONFIRMED);
+
+            Reservation reservation = new Reservation(
+                    request.getUserId(),
+                    show,
+                    seat,
+                    ReservationStatus.CONFIRMED
+            );
+
+            Reservation savedReservation =
+                    reservationRepository.save(reservation);
+
+            responses.add(
+                    new ReservationResponse(
+                            savedReservation.getId(),
+                            show.getId(),
+                            request.getUserId(),
+                            seat.getSeatNumber(),
+                            savedReservation.getStatus().name()
+                    )
+            );
+        }
+
+        return responses.get(0);
     }
     
 }
