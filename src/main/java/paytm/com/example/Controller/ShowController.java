@@ -1,6 +1,8 @@
 package paytm.com.example.Controller;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import paytm.com.example.Entity.Show;
 import paytm.com.example.Service.ShowService;
 import paytm.com.example.dto.CreateShowRequest;
+import paytm.com.example.dto.ShowResponse;
 
 @RestController
 @RequestMapping("/shows")
@@ -24,8 +27,12 @@ public class ShowController {
 	    @PostMapping
 	    @ResponseStatus(HttpStatus.CREATED)
 	    public Show createShow(@RequestBody CreateShowRequest request) {
-
 	        return showService.createShow(request);
+	    }
+	    
+	    @GetMapping("/{id}")
+	    public ShowResponse getShow(@PathVariable Long id) {
+	        return showService.getShow(id);
 	    }
 	    
 }
