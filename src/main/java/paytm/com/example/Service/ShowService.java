@@ -165,5 +165,22 @@ public class ShowService {
 
 		return responses.get(0);
 	}
+	
+	@Transactional
+	public void cancelReservation(Long reservationId) {
+
+	    Reservation reservation = reservationRepository.findById(reservationId)
+	            .orElseThrow(() ->
+	                    new RuntimeException("Reservation not found"));
+
+	    if (reservation.getStatus() == ReservationStatus.CANCELLED) {
+	        throw new RuntimeException("Reservation already cancelled");
+	    }
+
+	    Seat seat = reservation.getSeat();
+
+	    reservation.setStatus(ReservationStatus.CANCELLED);
+	    seat.setStatus(SeatStatus.AVAILABLE);
+	}
 
 }

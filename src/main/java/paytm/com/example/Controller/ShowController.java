@@ -42,4 +42,11 @@ public class ShowController {
 	public ReservationResponse reserveSeats(@PathVariable Long id, @RequestBody ReserveRequest request) {
 		return showService.reserveSeats(id, request);
 	}
+
+	@PostMapping("/reservations/{reservationId}/cancel")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void cancelReservation(@PathVariable Long reservationId) {
+
+		showService.cancelReservation(reservationId);
+	}
 }
