@@ -14,4 +14,10 @@ public class GlobalExceptionHandler {
         return ex.getMessage();
     }
 
+    @ExceptionHandler(UserReservationLimitExceededException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public String handleUserReservationLimitExceeded(
+            UserReservationLimitExceededException ex) {
+        return ex.getMessage();
+    }
 }
