@@ -14,6 +14,7 @@ import paytm.com.example.Entity.ReservationStatus;
 import paytm.com.example.Entity.Seat;
 import paytm.com.example.Entity.SeatStatus;
 import paytm.com.example.Entity.Show;
+import paytm.com.example.Entity.UserReservationLock;
 import paytm.com.example.Exception.IdempotencyConflictException;
 import paytm.com.example.Exception.SeatAlreadyReservedException;
 import paytm.com.example.Exception.UnauthorizedReservationCancellationException;
@@ -22,6 +23,7 @@ import paytm.com.example.Repository.IdempotencyRecordRepository;
 import paytm.com.example.Repository.ReservationRepository;
 import paytm.com.example.Repository.SeatRepository;
 import paytm.com.example.Repository.ShowRepository;
+import paytm.com.example.Repository.UserReservationLockRepository;
 import paytm.com.example.dto.CreateShowRequest;
 import paytm.com.example.dto.ReservationResponse;
 import paytm.com.example.dto.ReserveRequest;
@@ -35,14 +37,17 @@ public class ShowService {
 	private final SeatRepository seatRepository;
 	private final ReservationRepository reservationRepository;
 	private final IdempotencyRecordRepository idempotencyRecordRepository;
+	private final UserReservationLockRepository userReservationLockRepository;
 
 	public ShowService(ShowRepository showRepository, SeatRepository seatRepository,
-			ReservationRepository reservationRepository, IdempotencyRecordRepository idempotencyRecordRepository) {
+			ReservationRepository reservationRepository, IdempotencyRecordRepository idempotencyRecordRepository,
+			UserReservationLockRepository userReservationLockRepository) {
 
 		this.showRepository = showRepository;
 		this.seatRepository = seatRepository;
 		this.reservationRepository = reservationRepository;
 		this.idempotencyRecordRepository = idempotencyRecordRepository;
+		this.userReservationLockRepository = userReservationLockRepository;
 	}
 
 	@Transactional
@@ -119,12 +124,17 @@ public class ShowService {
 
 		Show show = showRepository.findById(showId).orElseThrow(() -> new RuntimeException("Show not found"));
 
-		long currentReservations = reservationRepository.countByUserIdAndStatus(userId, ReservationStatus.CONFIRMED);
+		userReservationLockRepository.createLockIfNotExists(userId);
 
+		userReservationLockRepository.findById(userId)
+		        .orElseThrow(() -> new RuntimeException("User lock not found"));
+		
+		List<Reservation> existingReservations = reservationRepository.findByUserIdAndStatus(userId, ReservationStatus.CONFIRMED);
+
+		int currentReservations = existingReservations.size();
 		int requestedSeats = request.getSeats().size();
 
 		if (currentReservations + requestedSeats > 4) {
-
 			throw new UserReservationLimitExceededException("User reservation limit exceeded");
 		}
 
@@ -134,8 +144,8 @@ public class ShowService {
 
 		for (String seatNumber : request.getSeats()) {
 
-			Seat seat = seatRepository.findByShowId(showId).stream().filter(s -> s.getSeatNumber().equals(seatNumber))
-					.findFirst().orElseThrow(() -> new RuntimeException("Seat not found"));
+			Seat seat = seatRepository.findByShowIdAndSeatNumber(showId, seatNumber)
+					.orElseThrow(() -> new RuntimeException("Seat not found"));
 
 			if (seat.getStatus() == SeatStatus.CONFIRMED) {
 
