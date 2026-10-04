@@ -19,10 +19,14 @@ import paytm.com.example.Entity.Show;
 import paytm.com.example.Exception.IdempotencyConflictException;
 import paytm.com.example.Exception.InvalidReservationRequestException;
 import paytm.com.example.Exception.MissingIdempotencyKeyException;
+import paytm.com.example.Exception.OriginalReservationNotFoundException;
+import paytm.com.example.Exception.ReservationAlreadyCancelledException;
+import paytm.com.example.Exception.ReservationNotFoundException;
 import paytm.com.example.Exception.SeatAlreadyReservedException;
 import paytm.com.example.Exception.SeatNotFoundException;
 import paytm.com.example.Exception.ShowNotFoundException;
 import paytm.com.example.Exception.UnauthorizedReservationCancellationException;
+import paytm.com.example.Exception.UserLockNotFoundException;
 import paytm.com.example.Exception.UserReservationLimitExceededException;
 import paytm.com.example.Repository.IdempotencyRecordRepository;
 import paytm.com.example.Repository.ReservationRepository;
@@ -131,7 +135,7 @@ public class ShowService {
 			}
 
 			Reservation reservation = reservationRepository.findById(record.getReservationId())
-					.orElseThrow(() -> new RuntimeException("Original reservation not found"));
+					.orElseThrow(() -> new OriginalReservationNotFoundException("Original reservation not found"));
 
 			return new ReservationResponse(reservation.getId(), reservation.getShow().getId(), reservation.getUserId(),
 					reservation.getSeat().getSeatNumber(), reservation.getStatus().name());
@@ -141,7 +145,7 @@ public class ShowService {
 
 		userReservationLockRepository.createLockIfNotExists(userId);
 
-		userReservationLockRepository.findById(userId).orElseThrow(() -> new RuntimeException("User lock not found"));
+		userReservationLockRepository.findById(userId).orElseThrow(() -> new UserLockNotFoundException("User lock not found"));
 
 		List<Reservation> existingReservations = reservationRepository.findByUserIdAndStatus(userId,
 				ReservationStatus.CONFIRMED);
@@ -195,14 +199,14 @@ public class ShowService {
 	public void cancelReservation(Long reservationId, String userId) {
 
 		Reservation reservation = reservationRepository.findById(reservationId)
-				.orElseThrow(() -> new RuntimeException("Reservation not found"));
+				.orElseThrow(() -> new ReservationNotFoundException("Reservation not found"));
 
 		if (!reservation.getUserId().equals(userId)) {
 			throw new UnauthorizedReservationCancellationException("User is not allowed to cancel this reservation");
 		}
 
 		if (reservation.getStatus() == ReservationStatus.CANCELLED) {
-			throw new RuntimeException("Reservation already cancelled");
+			throw new ReservationAlreadyCancelledException("Reservation already cancelled");
 		}
 
 		Seat seat = reservation.getSeat();

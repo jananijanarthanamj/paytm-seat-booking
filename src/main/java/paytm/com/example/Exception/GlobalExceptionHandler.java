@@ -62,4 +62,32 @@ public class GlobalExceptionHandler {
             InvalidReservationRequestException ex) {
         return ex.getMessage();
     }
+    
+    @ExceptionHandler(ReservationNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public String handleReservationNotFound(
+            ReservationNotFoundException ex) {
+        return ex.getMessage();
+    }
+    
+    @ExceptionHandler(OriginalReservationNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public String handleOriginalReservationNotFound(
+            OriginalReservationNotFoundException ex) {
+        return ex.getMessage();
+    }
+
+    @ExceptionHandler(UserLockNotFoundException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public String handleUserLockNotFound(
+            UserLockNotFoundException ex) {
+        return ex.getMessage();
+    }
+    
+    @ExceptionHandler(ReservationAlreadyCancelledException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public String handleReservationAlreadyCancelled(
+            ReservationAlreadyCancelledException ex) {
+        return ex.getMessage();
+    }
 }
