@@ -1,8 +1,10 @@
 package paytm.com.example.Service;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -14,9 +16,12 @@ import paytm.com.example.Entity.ReservationStatus;
 import paytm.com.example.Entity.Seat;
 import paytm.com.example.Entity.SeatStatus;
 import paytm.com.example.Entity.Show;
-import paytm.com.example.Entity.UserReservationLock;
 import paytm.com.example.Exception.IdempotencyConflictException;
+import paytm.com.example.Exception.InvalidReservationRequestException;
+import paytm.com.example.Exception.MissingIdempotencyKeyException;
 import paytm.com.example.Exception.SeatAlreadyReservedException;
+import paytm.com.example.Exception.SeatNotFoundException;
+import paytm.com.example.Exception.ShowNotFoundException;
 import paytm.com.example.Exception.UnauthorizedReservationCancellationException;
 import paytm.com.example.Exception.UserReservationLimitExceededException;
 import paytm.com.example.Repository.IdempotencyRecordRepository;
@@ -69,7 +74,7 @@ public class ShowService {
 
 	public ShowResponse getShow(Long showId) {
 
-		Show show = showRepository.findById(showId).orElseThrow(() -> new RuntimeException("Show not found"));
+		Show show = showRepository.findById(showId).orElseThrow(() -> new ShowNotFoundException("Show not found"));
 
 		List<Seat> seats = seatRepository.findByShowId(showId);
 
@@ -95,9 +100,19 @@ public class ShowService {
 	@Transactional
 	public ReservationResponse reserveSeats(Long showId, ReserveRequest request, String userId) {
 
+		if (request.getSeats() == null || request.getSeats().isEmpty()) {
+			throw new InvalidReservationRequestException("At least one seat is required");
+		}
+
+		Set<String> uniqueSeats = new HashSet<>(request.getSeats());
+
+		if (uniqueSeats.size() != request.getSeats().size()) {
+			throw new InvalidReservationRequestException("Duplicate seats are not allowed");
+		}
+
 		if (request.getIdempotencyKey() == null || request.getIdempotencyKey().isBlank()) {
 
-			throw new RuntimeException("Idempotency key is required");
+			throw new MissingIdempotencyKeyException("Idempotency key is required");
 		}
 
 		Optional<IdempotencyRecord> existingRecord = idempotencyRecordRepository
@@ -122,14 +137,14 @@ public class ShowService {
 					reservation.getSeat().getSeatNumber(), reservation.getStatus().name());
 		}
 
-		Show show = showRepository.findById(showId).orElseThrow(() -> new RuntimeException("Show not found"));
+		Show show = showRepository.findById(showId).orElseThrow(() -> new ShowNotFoundException("Show not found"));
 
 		userReservationLockRepository.createLockIfNotExists(userId);
 
-		userReservationLockRepository.findById(userId)
-		        .orElseThrow(() -> new RuntimeException("User lock not found"));
-		
-		List<Reservation> existingReservations = reservationRepository.findByUserIdAndStatus(userId, ReservationStatus.CONFIRMED);
+		userReservationLockRepository.findById(userId).orElseThrow(() -> new RuntimeException("User lock not found"));
+
+		List<Reservation> existingReservations = reservationRepository.findByUserIdAndStatus(userId,
+				ReservationStatus.CONFIRMED);
 
 		int currentReservations = existingReservations.size();
 		int requestedSeats = request.getSeats().size();
@@ -145,7 +160,7 @@ public class ShowService {
 		for (String seatNumber : request.getSeats()) {
 
 			Seat seat = seatRepository.findByShowIdAndSeatNumber(showId, seatNumber)
-					.orElseThrow(() -> new RuntimeException("Seat not found"));
+					.orElseThrow(() -> new SeatNotFoundException("Seat not found"));
 
 			if (seat.getStatus() == SeatStatus.CONFIRMED) {
 

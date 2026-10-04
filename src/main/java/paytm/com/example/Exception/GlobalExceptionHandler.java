@@ -36,4 +36,30 @@ public class GlobalExceptionHandler {
 
         return ex.getMessage();
     }
+    
+    @ExceptionHandler(MissingIdempotencyKeyException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public String handleMissingIdempotencyKey(
+            MissingIdempotencyKeyException ex) {
+        return ex.getMessage();
+    }
+    
+    @ExceptionHandler(ShowNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public String handleShowNotFound(ShowNotFoundException ex) {
+        return ex.getMessage();
+    }
+    
+    @ExceptionHandler(SeatNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public String handleSeatNotFound(SeatNotFoundException ex) {
+        return ex.getMessage();
+    }
+    
+    @ExceptionHandler(InvalidReservationRequestException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public String handleInvalidReservationRequest(
+            InvalidReservationRequestException ex) {
+        return ex.getMessage();
+    }
 }
