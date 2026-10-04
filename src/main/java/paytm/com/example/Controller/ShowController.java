@@ -55,8 +55,14 @@ public class ShowController {
 
 	@PostMapping("/reservations/{reservationId}/cancel")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public void cancelReservation(@PathVariable Long reservationId) {
+	public void cancelReservation(
+	        @PathVariable Long reservationId,
+	        HttpServletRequest httpRequest) {
 
-		showService.cancelReservation(reservationId);
+	    String userId = (String) httpRequest.getAttribute(
+	            AuthenticatedUserFilter.USER_ID_ATTRIBUTE
+	    );
+
+	    showService.cancelReservation(reservationId, userId);
 	}
 }

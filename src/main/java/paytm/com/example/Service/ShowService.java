@@ -16,6 +16,7 @@ import paytm.com.example.Entity.SeatStatus;
 import paytm.com.example.Entity.Show;
 import paytm.com.example.Exception.IdempotencyConflictException;
 import paytm.com.example.Exception.SeatAlreadyReservedException;
+import paytm.com.example.Exception.UnauthorizedReservationCancellationException;
 import paytm.com.example.Exception.UserReservationLimitExceededException;
 import paytm.com.example.Repository.IdempotencyRecordRepository;
 import paytm.com.example.Repository.ReservationRepository;
@@ -152,8 +153,8 @@ public class ShowService {
 				firstReservationId = savedReservation.getId();
 			}
 
-			responses.add(new ReservationResponse(savedReservation.getId(), show.getId(), reservation.getUserId(), seat.getSeatNumber(),
-					savedReservation.getStatus().name()));
+			responses.add(new ReservationResponse(savedReservation.getId(), show.getId(), reservation.getUserId(),
+					seat.getSeatNumber(), savedReservation.getStatus().name()));
 		}
 
 		// Save ONE idempotency record for the whole request
@@ -166,10 +167,14 @@ public class ShowService {
 	}
 
 	@Transactional
-	public void cancelReservation(Long reservationId) {
+	public void cancelReservation(Long reservationId, String userId) {
 
 		Reservation reservation = reservationRepository.findById(reservationId)
 				.orElseThrow(() -> new RuntimeException("Reservation not found"));
+
+		if (!reservation.getUserId().equals(userId)) {
+			throw new UnauthorizedReservationCancellationException("User is not allowed to cancel this reservation");
+		}
 
 		if (reservation.getStatus() == ReservationStatus.CANCELLED) {
 			throw new RuntimeException("Reservation already cancelled");

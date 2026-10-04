@@ -28,4 +28,12 @@ public class GlobalExceptionHandler {
 
         return ex.getMessage();
     }
+    
+    @ExceptionHandler(UnauthorizedReservationCancellationException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public String handleUnauthorizedReservationCancellation(
+            UnauthorizedReservationCancellationException ex) {
+
+        return ex.getMessage();
+    }
 }
